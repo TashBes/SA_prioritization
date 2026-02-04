@@ -283,7 +283,7 @@ features <- readRDS(file.path(inputDat, "RDS/PUs", "PUs_all_features_cost.rds"))
   st_transform(cCRS) %>%
   rowid_to_column( var= "cellID") %>% 
   select(-cost)
-  
+
 ## -----------------------------------------------------------------------------------------------------------------------
 cost <- readRDS(file.path(inputDat, "RDS/PUs", "PUs_all_features_cost.rds")) %>%
   st_transform(cCRS) %>%
@@ -322,7 +322,7 @@ set_target <- c(0.1, 0.2, 0.3, 0.4, 0.5,
 ggplot2::theme_set(ggplot2::theme_minimal())
 
 # Apply the CSS used by the Shiny app to the ggplot2 plots
-#thematic_shiny()
+thematic_shiny()
 
 sidebar_content <- 
   list(
@@ -341,9 +341,9 @@ sidebar_content <-
 # Build the app UI
 ui <- page_sidebar(
   
-  # # Add github link
-  # ribbon_css("https://github.com/garrettgman/shiny-styling-demo"),
-  # 
+  # Add github link
+  ribbon_css("https://github.com/garrettgman/shiny-styling-demo"),
+  
   # Set the CSS theme
   theme = bs_theme(bootswatch = "darkly",
                    version = 5,
@@ -352,16 +352,15 @@ ui <- page_sidebar(
                    base_font = font_google("Lato"),
                    heading_font = font_face(family = "Open Sauce Sans",
                                             src = "url('../OpenSauceSans-Regular.ttf') format('truetype')")),
-
+  
   # Add title
   title = "Systamatic conservation planning",
   
   # Add sidebar elements
   sidebar = sidebar(
     class = "bg-secondary",
-    sidebar_content
-    # ,
-    # HTML('<img src = "logo.png", width = "100%", height = "auto">')
+    sidebar_content,
+    HTML('<img src = "logo.png", width = "100%", height = "auto">')
   ),
   
   # Layout non-sidebar elements
@@ -370,13 +369,70 @@ ui <- page_sidebar(
          plotOutput(outputId = "map")),
     card(card_header("Table of targets met by a solution to a conservation planning problem", class = "h6 text-success"),
          tableOutput(outputId = "SummaryTable")),
-    col_widths = c(12, 12),
-    row_heights = c(4, 1.5)
+    
+    ##2 
+    tableOutput(outputId = "SummaryTable"),
+    value_box(title = "Recommended Trial",
+              textOutput("recommended_eval"),
+              showcase = bs_icon("stars"),
+              theme = "success"),
+    value_box(title = "Customers",
+              textOutput("number_of_customers"),
+              showcase = bs_icon("people-fill"),
+              theme = "secondary"),
+    value_box(title = "Avg Spend",
+              textOutput("average_spend"),
+              showcase = bs_icon("coin"),
+              theme = "secondary"),
+    card(card_header("Conversion rates by subgroup", class = "h6 text-success"),
+         tableOutput("table")),
+    col_widths = c(8, 4, 4, 4, 4, 12),
+    row_heights = c(4, 1.5, 3)
   )
 )
 
 
 
+
+ui <- fluidPage(
+  
+  #---------------------------------------------------------
+  ####inputs
+  ###row 1
+  fluidRow(
+    
+    ##1
+    column(6, 
+           selectInput(
+             "feature", "What feature would you like to include?", names_features,
+             multiple = TRUE, selected = "total_kob_mass")),
+    
+    ##2
+    column(4,
+           numericInput(inputId = "n",
+                        "Protection target", value = 0.3),
+           
+           numericInput(inputId = "penalty",
+                        "Border penalty", value = 0,
+                        min = 0, max = 10, step = 0.1),
+           actionButton("simulate", "Solve!"))
+    
+    
+    
+  ),
+  #----------------------------------------------------------
+  #outputs
+  
+  ##1
+  plotOutput(outputId = "map"),
+  
+  ##2 
+  tableOutput(outputId = "SummaryTable"),
+  
+  ##3
+  # textOutput(outputId = "test")
+  
+)
 
 
 
@@ -430,17 +486,17 @@ server <- function(input, output, session) {
     
   }, res = 96)
   
-
+  
   output$SummaryTable <- renderTable({
-
+    
     eval_target_coverage_summary(
       problem(),
       dplyr::select(soln(), solution_1))
-
-
+    
+    
   })
-
-
+  
+  
 }
 
 
